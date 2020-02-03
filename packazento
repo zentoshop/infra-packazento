@@ -1,0 +1,22 @@
+HEADER="{
+  \"packages\": {
+    \"zentoshop/$1\": {"
+FOOTER="    }
+  }
+}"
+echo "$HEADER" > packages.json
+TAGS=$(aws s3 ls s3://zento-modules/m2-cli-init/ | grep zip | awk '{print $4}' | rev | cut -d"." -f2- | rev)
+for TAG in $TAGS; do
+if [ "$TAG" != "$(echo $TAGS | awk '{ print $NF }')" ];
+then
+  NEXT=","
+else
+  NEXT=""
+fi
+echo 
+eval "cat <<EOF
+$(<templates/version.json)
+EOF
+" >> packages.json
+done
+echo "$FOOTER" >> packages.json
