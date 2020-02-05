@@ -4,6 +4,7 @@
         "version": "$TAG",
         "type": "m2-module",
         "license": "MIT",
+        "autoload": $AUTOLOAD,
         "dist": {
           "url": "s3://zento-modules/$1/$TAG.zip",
           "type": "zip"

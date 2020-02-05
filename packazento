@@ -4,19 +4,19 @@ HEADER="{
 FOOTER="    }
   }
 }"
-echo "$HEADER" > packages.json
-TAGS=$(aws s3 ls s3://zento-modules/m2-cli-init/ | grep zip | awk '{print $4}' | rev | cut -d"." -f2- | rev)
+echo "$HEADER" > out.json
+TAGS=$(aws s3 ls s3://zento-modules/$1/ | grep json | grep -v "packages.json" | awk '{print $4}' | rev | cut -d"." -f2- | rev)
 for TAG in $TAGS; do
-if [ "$TAG" != "$(echo $TAGS | awk '{ print $NF }')" ];
-then
-  NEXT=","
-else
-  NEXT=""
-fi
-echo 
-eval "cat <<EOF
-$(<templates/version.json)
-EOF
-" >> packages.json
+  aws s3 cp s3://zento-modules/$1/$TAG.json .
+  if [ "$TAG" != "$(echo $TAGS | awk '{ print $NF }')" ];
+  then
+    NEXT=","
+  else
+    NEXT=""
+  fi
+  AUTOLOAD=$(jq .autoload $TAG.json)
+  eval "cat <<EOF
+  $(<templates/version.json)" >> out.json
 done
-echo "$FOOTER" >> packages.json
+echo "$FOOTER" >> out.json
+jq . out.json > packages.json
