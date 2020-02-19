@@ -8,5 +8,6 @@
         "dist": {
           "url": "s3://zento-modules/$1/$TAG.zip",
           "type": "zip"
-        }
+        },
+        "require": $REQUIRE
       }$NEXT

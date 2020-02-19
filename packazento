@@ -14,7 +14,9 @@ for TAG in $TAGS; do
   else
     NEXT=""
   fi
+  ### the next variables are used in templates/version.json
   AUTOLOAD=$(jq .autoload $TAG.json)
+  REQUIRE=$(jq .require $TAG.json)
   eval "cat <<EOF
   $(<templates/version.json)" >> out.json
 done
