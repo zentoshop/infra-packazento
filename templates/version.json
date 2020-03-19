@@ -1,12 +1,12 @@
       "$TAG": {
-        "name": "zentoshop/$1",
+        "name": "zentoshop/$REPO_NAME",
         "description": "",
         "version": "$TAG",
         "type": "m2-module",
         "license": "MIT",
         "autoload": $AUTOLOAD,
         "dist": {
-          "url": "s3://zento-modules/$1/$TAG.zip",
+          "url": "s3://zento-modules/$REPO_NAME/$TAG.zip",
           "type": "zip"
         },
         "require": $REQUIRE

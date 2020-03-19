@@ -1,0 +1,7 @@
+TAG="${GITHUB_REF##*/}"
+if [[ $TAG =~ ^([0-9])+\.([0-9])+\.([0-9])+(\.([0-9])+)?$ ]] || [[ "$TAG" == "dev" ]]; then
+  echo "Version tag validated: $TAG"
+else
+  echo "Error! Version tag: '$TAG' is not accepted. Accepted tags are: <digits>.<digits>.<digits> or <digits>.<digits>.<digits>.<digits>"
+  exit 1
+fi

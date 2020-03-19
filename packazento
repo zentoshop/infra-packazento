@@ -1,13 +1,22 @@
+REPO_NAME="${GITHUB_REPOSITORY##*/}"
 HEADER="{
   \"packages\": {
-    \"zentoshop/$1\": {"
+    \"zentoshop/$REPO_NAME\": {"
 FOOTER="    }
   }
 }"
 echo "$HEADER" > out.json
-TAGS=$(aws s3 ls s3://zento-modules/$1/ | grep json | grep -v "packages.json" | awk '{print $4}' | rev | cut -d"." -f2- | rev)
+TAGS=$(aws s3 ls s3://zento-modules/$REPO_NAME/ | grep json | grep -v "packages.json" | awk '{print $4}' | rev | cut -d"." -f2- | rev)
+echo "Available Tags: ${#TAGS[@]} >> $TAGS"
 for TAG in $TAGS; do
-  aws s3 cp s3://zento-modules/$1/$TAG.json .
+  if [ "$TAG" == "dev" ];then
+    # rewrite variable for future use
+    TAG="0.0.0.0"
+    TAGS=${TAGS/dev/0.0.0.0}
+    aws s3 mv s3://zento-modules/$REPO_NAME/dev.zip s3://zento-modules/$REPO_NAME/$TAG.zip
+    aws s3 mv s3://zento-modules/$REPO_NAME/dev.json s3://zento-modules/$REPO_NAME/$TAG.json
+  fi
+  aws s3 cp s3://zento-modules/$REPO_NAME/$TAG.json .
   if [ "$TAG" != "$(echo $TAGS | awk '{ print $NF }')" ];
   then
     NEXT=","
@@ -15,10 +24,11 @@ for TAG in $TAGS; do
     NEXT=""
   fi
   ### the next variables are used in templates/version.json
-  AUTOLOAD=$(jq .autoload $TAG.json)
-  REQUIRE=$(jq .require $TAG.json)
+  AUTOLOAD="$(jq .autoload $TAG.json)"
+  REQUIRE="$(jq .require $TAG.json)"
   eval "cat <<EOF
   $(<templates/version.json)" >> out.json
 done
 echo "$FOOTER" >> out.json
 jq . out.json > packages.json
+aws s3 cp packages.json s3://zento-modules/$REPO_NAME/
