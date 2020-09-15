@@ -1,5 +1,5 @@
       "$TAG": {
-        "name": "zentoshop/$REPO_NAME",
+        "name": "$COMPANY_NAME/$REPO_NAME",
         "description": "",
         "version": "$TAG",
         "type": "m2-module",
@@ -11,3 +11,5 @@
         },
         "require": $REQUIRE
       }$NEXT
+EOF
+

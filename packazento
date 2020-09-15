@@ -1,34 +1,52 @@
+#!/bin/bash
+### The next line is for DEBUGING purposes
+#GITHUB_REPOSITORY="zentoshop/ext-m2-innoship"
+
 REPO_NAME="${GITHUB_REPOSITORY##*/}"
-HEADER="{
-  \"packages\": {
-    \"zentoshop/$REPO_NAME\": {"
-FOOTER="    }
-  }
-}"
-echo "$HEADER" > out.json
 TAGS=$(aws s3 ls s3://zento-modules/$REPO_NAME/ | grep json | grep -v "packages.json" | awk '{print $4}' | rev | cut -d"." -f2- | rev)
-echo "Available Tags: ${#TAGS[@]} >> $TAGS"
-for TAG in $TAGS; do
-  if [ "$TAG" == "dev" ];then
-    # rewrite variable for future use
-    TAG="0.0.0.0"
-    TAGS=${TAGS/dev/0.0.0.0}
-    aws s3 mv s3://zento-modules/$REPO_NAME/dev.zip s3://zento-modules/$REPO_NAME/$TAG.zip
-    aws s3 mv s3://zento-modules/$REPO_NAME/dev.json s3://zento-modules/$REPO_NAME/$TAG.json
-  fi
-  aws s3 cp s3://zento-modules/$REPO_NAME/$TAG.json .
-  if [ "$TAG" != "$(echo $TAGS | awk '{ print $NF }')" ];
-  then
-    NEXT=","
-  else
-    NEXT=""
-  fi
-  ### the next variables are used in templates/version.json
-  AUTOLOAD="$(jq .autoload $TAG.json)"
-  REQUIRE="$(jq .require $TAG.json)"
-  eval "cat <<EOF
-  $(<templates/version.json)" >> out.json
-done
-echo "$FOOTER" >> out.json
-jq . out.json > packages.json
-aws s3 cp packages.json s3://zento-modules/$REPO_NAME/
+COUNT_TAGS="${#TAGS[@]}"
+echo "$REPO_NAME has $COUNT_TAGS Available Tags: $TAGS"
+if [[ "$COUNT_TAGS" > "0" ]]
+then
+  for TAG in $TAGS; do
+    echo $TAG
+    if [ "$TAG" == "dev" ]
+    then
+      # rewrite variable for future use
+      TAG="0.0.0.0"
+      TAGS=${TAGS/dev/0.0.0.0}
+      aws s3 mv s3://zento-modules/$REPO_NAME/dev.zip s3://zento-modules/$REPO_NAME/$TAG.zip
+      aws s3 mv s3://zento-modules/$REPO_NAME/dev.json s3://zento-modules/$REPO_NAME/$TAG.json
+    fi
+    aws s3 cp s3://zento-modules/$REPO_NAME/$TAG.json .
+    if [ "$TAG" != "$(echo $TAGS | awk '{ print $NF }')" ];
+    then
+      NEXT=","
+    else
+      NEXT=""
+    fi
+    ### the next variables are used in templates/*.json
+    COMPANY_NAME="$(jq .name $TAG.json | cut -d"/" -f1 | tr -d "\"")" 
+    AUTOLOAD="$(jq .autoload $TAG.json)"
+    REQUIRE="$(jq .require $TAG.json)"
+    if [ "$TAG" = "$(echo $TAGS | awk '{ print $1 }')" ];
+    then
+      echo "Generating Header of packages.json ..."
+      eval "cat <<EOF
+      $(<templates/header.json)" > out.json
+      cat out.json
+    fi
+    echo "Adding version $TAG to packages.json ..."
+    eval "cat <<EOF
+    $(<templates/version.json)" >> out.json
+    cat out.json
+  done
+  echo "Adding footer to packages.json ..."
+  echo "}}}" >> out.json # FOOTER
+  echo "Check and set identation on packages.json ..."
+  cat out.json
+  echo "---"
+  jq . out.json > packages.json
+  #cat packages.json
+  aws s3 cp packages.json s3://zento-modules/$REPO_NAME/
+fi
