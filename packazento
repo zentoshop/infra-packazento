@@ -19,6 +19,13 @@ then
       aws s3 mv s3://zento-modules/$REPO_NAME/dev.json s3://zento-modules/$REPO_NAME/$TAG.json
     fi
     aws s3 cp s3://zento-modules/$REPO_NAME/$TAG.json .
+    COMPOSER_VERSION="$(jq .version $TAG.json)"
+    echo $COMPOSER_VERSION
+    #if [ "$COMPOSER_VERSION" != "$TAG" ];
+    #then
+    #  echo "Error! Composer Version doesn't match with released version!"
+    #  exit 1
+    #fi
     if [ "$TAG" != "$(echo $TAGS | awk '{ print $NF }')" ];
     then
       NEXT=","
