@@ -1,6 +1,25 @@
 #!/bin/bash
 ### The next line is for DEBUGING purposes
 #GITHUB_REPOSITORY="zentoshop/ext-m2-innoship"
+jq .
+if [ ! -f composer.json ];
+then
+  echo "Error! composer.json File not found!"
+  exit 1
+fi
+
+MODULE_VERSION=${GITHUB_REF##*/}
+if [ "$MODULE_VERSION" == "dev" ]
+then
+  MODULE_VERSION="0.0.0.0"
+fi
+COMPOSER=$(jq '.version = "$MODULE_VERSION"' composer.json)
+echo "${COMPOSER}" > composer.json
+cat composer.json
+exit 0
+zip -r latest.zip * -x ".*"
+aws s3 cp latest.zip s3://zento-modules/${GITHUB_REPOSITORY##*/}/${GITHUB_REF##*/}.zip
+aws s3 cp composer.json s3://zento-modules/${GITHUB_REPOSITORY##*/}/${GITHUB_REF##*/}.json
 
 REPO_NAME="${GITHUB_REPOSITORY##*/}"
 TAGS=$(aws s3 ls s3://zento-modules/$REPO_NAME/ | grep json | grep -v "packages.json" | awk '{print $4}' | rev | cut -d"." -f2- | rev)
