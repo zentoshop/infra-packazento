@@ -1,7 +1,7 @@
 #!/bin/bash
 ### The next line is for DEBUGING purposes
 #GITHUB_REPOSITORY="zentoshop/ext-m2-innoship"
-jq .
+ls -al
 if [ ! -f composer.json ];
 then
   echo "Error! composer.json File not found!"
@@ -13,13 +13,12 @@ if [ "$MODULE_VERSION" == "dev" ]
 then
   MODULE_VERSION="0.0.0.0"
 fi
-COMPOSER=$(jq '.version = "$MODULE_VERSION"' composer.json)
-echo "${COMPOSER}" > composer.json
+COMPOSER=$(jq ".version = \"$MODULE_VERSION\"" composer.json)
+echo $COMPOSER | jq . > composer.json
 cat composer.json
-exit 0
 zip -r latest.zip * -x ".*"
-aws s3 cp latest.zip s3://zento-modules/${GITHUB_REPOSITORY##*/}/${GITHUB_REF##*/}.zip
-aws s3 cp composer.json s3://zento-modules/${GITHUB_REPOSITORY##*/}/${GITHUB_REF##*/}.json
+aws s3 cp latest.zip s3://zento-modules/${GITHUB_REPOSITORY##*/}/${MODULE_VERSION}.zip
+aws s3 cp composer.json s3://zento-modules/${GITHUB_REPOSITORY##*/}/${MODULE_VERSION}.json
 
 REPO_NAME="${GITHUB_REPOSITORY##*/}"
 TAGS=$(aws s3 ls s3://zento-modules/$REPO_NAME/ | grep json | grep -v "packages.json" | awk '{print $4}' | rev | cut -d"." -f2- | rev)
@@ -38,13 +37,6 @@ then
       aws s3 mv s3://zento-modules/$REPO_NAME/dev.json s3://zento-modules/$REPO_NAME/$TAG.json
     fi
     aws s3 cp s3://zento-modules/$REPO_NAME/$TAG.json .
-    COMPOSER_VERSION="$(jq .version $TAG.json)"
-    echo $COMPOSER_VERSION
-    #if [ "$COMPOSER_VERSION" != "$TAG" ];
-    #then
-    #  echo "Error! Composer Version doesn't match with released version!"
-    #  exit 1
-    #fi
     if [ "$TAG" != "$(echo $TAGS | awk '{ print $NF }')" ];
     then
       NEXT=","
@@ -59,12 +51,12 @@ then
     then
       echo "Generating Header of packages.json ..."
       eval "cat <<EOF
-      $(<templates/header.json)" > out.json
+      $(</tmp/packazento/templates/header.json)" > out.json
       cat out.json
     fi
     echo "Adding version $TAG to packages.json ..."
     eval "cat <<EOF
-    $(<templates/version.json)" >> out.json
+    $(</tmp/packazento/templates/version.json)" >> out.json
     cat out.json
   done
   echo "Adding footer to packages.json ..."
@@ -73,6 +65,6 @@ then
   cat out.json
   echo "---"
   jq . out.json > packages.json
-  #cat packages.json
+  cat packages.json
   aws s3 cp packages.json s3://zento-modules/$REPO_NAME/
 fi

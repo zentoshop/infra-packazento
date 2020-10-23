@@ -1,3 +1,4 @@
+#!/bin/bash
 TAG="${GITHUB_REF##*/}"
 if [[ $TAG =~ ^([0-9])+\.([0-9])+\.([0-9])+(\.([0-9])+)?$ ]] || [[ "$TAG" == "dev" ]]; then
   echo "Version tag validated: $TAG"
